@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flipping Palermo — Panel de negocio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+:root{
+--bg: #eae7e0;
+--ink: #1c2321;
+--ink-soft: #52534d;
+--surface: #ffffff;
+--line: #d8d3c6;
+--teal: #1f6e6a;
+--teal-deep: #144e4b;
+--ochre: #b9812a;
+--green-bg: #e2efe3; --green-ink:#245c34; --green-line:#a9d2af;
+--amber-bg: #f6ecd8; --amber-ink:#7a5613; --amber-line:#e2c78a;
+--red-bg: #f5e3df; --red-ink:#8c3524; --red-line:#e3b3a5;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+background:var(--bg);
+color:var(--ink);
+font-family:'IBM Plex Sans', sans-serif;
+-webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,.serif{ font-family:'Fraunces', serif; }
+.mono{ font-family:'IBM Plex Mono', monospace; }
+/* ---------- Login ---------- */
+#login-screen{
+min-height:100vh; display:flex; align-items:center; justify-content:center;
+padding:24px;
+}
+.login-card{
+background:var(--surface); border:1px solid var(--line);
+max-width:400px; width:100%; padding:44px 36px;
+}
+.login-card h1{ font-size:28px; font-weight:600; margin:0 0 6px; letter-spacing:-0.01em; }
+.login-card p.tag{ color:var(--ink-soft); margin:0 0 30px; font-size:14.5px; line-height:1.5;}
+.field{ margin-bottom:16px; }
+.field label{ display:block; font-size:12.5px; color:var(--ink-soft); margin-bottom:6px; }
+.field input{
+width:100%; padding:11px 12px; border:1px solid var(--line); background:#fbfaf7;
+font-family:inherit; font-size:15px; color:var(--ink);
+}
+.field input:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+.btn{
+display:inline-flex; align-items:center; justify-content:center; gap:8px;
+background:var(--teal); color:#fff; border:none; padding:12px 20px;
+font-family:inherit; font-size:15px; font-weight:600; cursor:pointer;
+width:100%; margin-top:6px; transition:background .15s ease;
+}
+.btn:hover{ background:var(--teal-deep); }
+.btn.secondary{ background:transparent; color:var(--teal); border:1px solid var(--teal); width:auto; padding:9px 16px; font-weight:500; font-size:13.5px;}
+.btn.secondary:hover{ background:#eef6f5; }
+.login-error{ color:var(--red-ink); font-size:13.5px; margin-top:10px; min-height:18px; }
+/* ---------- App shell ---------- */
+#app{ display:none; min-height:100vh; }
+.topbar{
+display:flex; align-items:center; justify-content:space-between;
+padding:18px 28px; border-bottom:1px solid var(--line); background:var(--surface);
+}
+.topbar .brand{ font-size:19px; font-weight:600; letter-spacing:-0.01em; }
+.topbar .brand span{ color:var(--teal); }
+.topbar .who{ font-size:13px; color:var(--ink-soft); display:flex; align-items:center; gap:14px; }
+.layout{ display:flex; align-items:flex-start; }
+nav.tabs{
+width:220px; flex-shrink:0; padding:24px 0; border-right:1px solid var(--line);
+min-height:calc(100vh - 61px); background:var(--surface);
+}
+nav.tabs button{
+display:block; width:100%; text-align:left; background:none; border:none;
+padding:12px 26px; font-family:inherit; font-size:14.5px; color:var(--ink-soft);
+cursor:pointer; border-left:3px solid transparent;
+}
+nav.tabs button.active{ color:var(--ink); border-left-color:var(--teal); background:#f4f2ec; font-weight:600; }
+nav.tabs button:hover{ color:var(--ink); }
+main{ flex:1; padding:32px 40px; max-width:1180px; }
+.view{ display:none; }
+.view.active{ display:block; }
+.view h2{ font-size:26px; font-weight:600; margin:0 0 6px; }
+.view > p.lead{ color:var(--ink-soft); margin:0 0 28px; max-width:640px; line-height:1.55; font-size:14.5px;}
+.card{ background:var(--surface); border:1px solid var(--line); padding:24px; margin-bottom:22px; }
+.card h3{ font-size:15.5px; font-weight:600; margin:0 0 16px; text-transform:none; }
+.grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px 24px; }
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px 24px; }
+@media (max-width:820px){ .grid2,.grid3{ grid-template-columns:1fr; } nav.tabs{width:180px;} main{padding:24px 18px;} }
+label.small{ display:block; font-size:12px; color:var(--ink-soft); margin-bottom:5px; }
+select,input[type=text],input[type=number]{
+width:100%; padding:9px 10px; border:1px solid var(--line); background:#fbfaf7;
+font-family:inherit; font-size:14.5px; color:var(--ink);
+}
+select:focus,input:focus{ outline:2px solid var(--teal); outline-offset:1px; }
+table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+th{ text-align:left; padding:9px 10px; border-bottom:2px solid var(--ink); font-weight:600; font-size:12px; color:var(--ink-soft); white-space:nowrap;}
+td{ padding:9px 10px; border-bottom:1px solid var(--line); white-space:nowrap; }
+tr:hover td{ background:#f7f5f0; }
+.table-scroll{ overflow-x:auto; }
+.tag{ display:inline-block; padding:3px 10px; font-size:12px; font-weight:600; border:1px solid; white-space:nowrap; }
+.tag.en{ background:var(--green-bg); color:var(--green-ink); border-color:var(--green-line); }
+.tag.arriba{ background:var(--amber-bg); color:var(--amber-ink); border-color:var(--amber-line); }
+.tag.fuera{ background:var(--red-bg); color:var(--red-ink); border-color:var(--red-line); }
+.result-row{ display:flex; justify-content:space-between; align-items:baseline; padding:9px 0; border-bottom:1px solid var(--line); gap:16px;}
+.result-row:last-child{ border-bottom:none; }
+.result-row .k{ font-size:13.5px; color:var(--ink-soft); }
+.result-row .v{ font-size:16px; font-weight:600; font-family:'IBM Plex Mono',monospace; text-align:right;}
+.result-row.big .v{ font-size:21px; }
+.result-row.good .v{ color:var(--green-ink); }
+.result-row.bad .v{ color:var(--red-ink); }
+.result-row.warn .v{ color:var(--amber-ink); }
+.section-label{ font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-soft); font-weight:600; margin:26px 0 10px; }
+.section-label:first-child{ margin-top:0; }
+.btn-add{ background:var(--ochre); }
+.btn-add:hover{ background:#96661d; }
+.btn-row{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
+.btn-row .btn{ width:auto; }
+.note{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:10px;}
+.footer-note{ padding:24px 40px; color:var(--ink-soft); font-size:12px; border-top:1px solid var(--line); margin-top:20px;}
+</style>
+</head>
+<body>
+<!-- ============ LOGIN ============ -->
+<div id="login-screen">
+<div class="login-card">
+<h1>Flipping <span style="color:var(--teal)">Palermo</span></h1>
+<p class="tag">Panel de evaluación de oportunidades de flipping inmobiliario. Ingresá con tu usuario para continuar.</p>
+<div class="field">
+<label for="login-user">Usuario</label>
+<input type="text" id="login-user" autocomplete="username">
+</div>
+<div class="field">
+<label for="login-pass">Contraseña</label>
+<input type="password" id="login-pass" autocomplete="current-password">
+</div>
+<button class="btn" onclick="attemptLogin()">Ingresar</button>
+<div class="login-error" id="login-error"></div>
+</div>
+</div>
+<!-- ============ APP ============ -->
+<div id="app">
+<div class="topbar">
+<div class="brand">Flipping <span>Palermo</span></div>
+<div class="who">
+<span id="who-label"></span>
+<button class="btn secondary" onclick="logout()">Cerrar sesión</button>
+</div>
+</div>
+<div class="layout">
+<nav class="tabs">
+<button class="tab-btn active" data-view="v-logica" onclick="showView('v-logica')">Lógica de negocio</button>
+<button class="tab-btn" data-view="v-mercado" onclick="showView('v-mercado')">Valor real de mercado</button>
+<button class="tab-btn" data-view="v-database" onclick="showView('v-database')">Database</button>
+<button class="tab-btn" data-view="v-parametros" onclick="showView('v-parametros')">Parámetros</button>
+</nav>
+<main>
+<!-- ---- LOGICA DE NEGOCIO ---- -->
+<section class="view active" id="v-logica">
+<h2>Evaluador de oportunidad y rentabilidad</h2>
+<p class="lead">Completá los datos de la unidad que estás evaluando. El resto se calcula solo, con los mismos parámetros de la pestaña Parámetros.</p>
+<div class="card">
+<h3>Datos de la unidad a evaluar</h3>
+<div class="grid3">
+<div><label class="small">Dirección (opcional)</label><input type="text" id="lg-direccion" placeholder="Ej. Gorriti 4500"></div>
+<div><label class="small">Ambientes</label>
+<select id="lg-ambientes"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+</div>
+<div><label class="small">Cochera</label>
+<select id="lg-cochera"><option>Con cochera</option><option>Sin cochera</option></select>
+</div>
+<div><label class="small">Tipo de unidad</label>
+<select id="lg-tipo"><option>Departamento</option><option>PH</option><option>Lote propio</option></select>
+</div>
+<div><label class="small">Barrio</label><select id="lg-barrio"></select></div>
+<div><label class="small">m² cubiertos</label><input type="number" id="lg-m2cub" value="53"></div>
+<div><label class="small">m² descubiertos</label><input type="number" id="lg-m2desc" value="5"></div>
+<div><label class="small">Precio de venta publicado (USD, sin tasas)</label><input type="number" id="lg-precio" value="198000"></div>
+<div><label class="small">Días publicado</label><input type="number" id="lg-dias" value="20"></div>
+<div><label class="small">Visualizaciones</label><input type="number" id="lg-visitas" value="400"></div>
+</div>
+</div>
+<div class="grid2">
+<div class="card">
+<h3>Comparables y oportunidad de compra</h3>
+<div class="result-row"><span class="k">m² totales</span><span class="v" id="out-m2tot">—</span></div>
+<div class="result-row"><span class="k">Comparables "en precio de mercado" encontrados</span><span class="v" id="out-cant">—</span></div>
+<div class="result-row big"><span class="k">Precio promedio de mercado</span><span class="v" id="out-precioprom">—</span></div>
+<div class="result-row"><span class="k">Precio total al valor publicado (con tasas)</span><span class="v" id="out-preciototal">—</span></div>
+<div class="result-row"><span class="k">Precio objetivo de compra</span><span class="v" id="out-precioobj">—</span></div>
+<div class="result-row"><span class="k">% diferencia real vs. mercado</span><span class="v" id="out-difreal">—</span></div>
+<div class="result-row big"><span class="k">¿Cumple el % de descuento objetivo?</span><span class="v" id="out-cumple">—</span></div>
+<div class="result-row"><span class="k">Si no cumple: precio a negociar</span><span class="v" id="out-sugerido">—</span></div>
+</div>
+<div class="card">
+<h3>Seguimiento de obra y rentabilidad real</h3>
+<div class="result-row"><span class="k">Precio de compra asumido (real)</span><span class="v" id="out-compraasumida">—</span></div>
+<div class="result-row"><span class="k">Costo real de compra (con tasas)</span><span class="v" id="out-costocompra">—</span></div>
+<div class="result-row"><span class="k">Costo de obra estimado</span><span class="v" id="out-costoobra">—</span></div>
+<div class="result-row"><span class="k">Costo total del proyecto</span><span class="v" id="out-costototal">—</span></div>
+<div class="result-row"><span class="k">Valor esperado de reventa</span><span class="v" id="out-reventa">—</span></div>
+<div class="result-row big"><span class="k">Beneficio directo estimado</span><span class="v" id="out-beneficio">—</span></div>
+<div class="result-row big"><span class="k">% Rentabilidad sobre la inversión</span><span class="v" id="out-rentabilidad">—</span></div>
+</div>
+</div>
+</section>
+<!-- ---- VALOR REAL DE MERCADO ---- -->
+<section class="view" id="v-mercado">
+<h2>Valor real de mercado</h2>
+<p class="lead">Precio promedio y cantidad de avisos en cada estado de precio, agrupados por Barrio + Ambientes + Tipo de unidad + Cochera. Se arma sola a partir de la Database.</p>
+<div class="card">
+<div class="table-scroll">
+<table id="tabla-mercado"><thead></thead><tbody></tbody></table>
+</div>
+<p class="note">Un promedio de "Fuera de precio de mercado" nunca puede ser menor al de "En precio de mercado": si una unidad barata figuraba como "fuera", se reclasifica sola como "en precio" (el problema sería la unidad, no el precio).</p>
+</div>
+</section>
+<!-- ---- DATABASE ---- -->
+<section class="view" id="v-database">
+<h2>Database de unidades comparables</h2>
+<p class="lead">Cargá acá las unidades que vayas relevando. El Diagnóstico de precio se calcula solo con el ratio de visualizaciones (últimos 30 días) y los parámetros de la pestaña Parámetros.</p>
+<div class="card">
+<h3>Agregar unidad</h3>
+<div class="grid3">
+<div><label class="small">Dirección</label><input type="text" id="db-direccion"></div>
+<div><label class="small">Barrio</label><input type="text" id="db-barrio" placeholder="Ej. Palermo"></div>
+<div><label class="small">Ambientes</label>
+<select id="db-ambientes"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option></select>
+</div>
+<div><label class="small">Cochera</label>
+<select id="db-cochera"><option>Con cochera</option><option>Sin cochera</option></select>
+</div>
+<div><label class="small">Tipo de unidad</label>
+<select id="db-tipo"><option>Departamento</option><option>PH</option><option>Lote propio</option></select>
+</div>
+<div><label class="small">m² cubiertos</label><input type="number" id="db-m2cub" value="50"></div>
+<div><label class="small">m² descubiertos</label><input type="number" id="db-m2desc" value="0"></div>
+<div><label class="small">Precio de venta (USD)</label><input type="number" id="db-precio" value="150000"></div>
+<div><label class="small">Días publicado</label><input type="number" id="db-dias" value="15"></div>
+<div><label class="small">Visualizaciones</label><input type="number" id="db-visitas" value="300"></div>
+<div><label class="small">Link de la publicación</label><input type="text" id="db-link"></div>
+<div><label class="small">Notas</label><input type="text" id="db-notas"></div>
+</div>
+<div class="btn-row">
+<button class="btn btn-add" style="background:var(--ochre)" onclick="addUnidad()">Agregar a la Database</button>
+<button class="btn secondary" onclick="resetData()">Restaurar datos originales</button>
+</div>
+</div>
+<div class="card">
+<h3>Unidades cargadas (<span id="db-count">0</span>)</h3>
+<div class="table-scroll">
+<table id="tabla-database"><thead></thead><tbody></tbody></table>
+</div>
+</div>
+</section>
+<!-- ---- PARAMETROS ---- -->
+<section class="view" id="v-parametros">
+<h2>Parámetros</h2>
+<p class="lead">Ajustá estos valores y todo el panel recalcula solo. Se guardan en este navegador.</p>
+<div class="card">
+<h3>Parámetros del Database (Diagnóstico de precio)</h3>
+<div class="grid2">
+<div><label class="small">Ratio mínimo — "En precio de mercado" (≥)</label><input type="number" id="p-ratioEn" step="0.1"></div>
+<div><label class="small">Ratio mínimo — "Un poco arriba" (≥)</label><input type="number" id="p-ratioArriba" step="0.1"></div>
+<div><label class="small">Ratio piso de seguridad — "Fuera de precio" (&lt;)</label><input type="number" id="p-ratioFuera" step="0.1"></div>
+<div><label class="small">Días máximos antes de forzar "Fuera de precio"</label><input type="number" id="p-diasMax"></div>
+</div>
+<p class="note">Ratio = Visualizaciones / 30 días (o Visualizaciones / Días si lleva menos de 30 días publicado).</p>
+</div>
+<div class="card">
+<h3>Parámetros de la Lógica de Negocio</h3>
+<div class="grid2">
+<div><label class="small">Tasa de escritura (%)</label><input type="number" id="p-tasa" step="0.01"></div>
+<div><label class="small">% Descuento objetivo de compra</label><input type="number" id="p-descuento" step="0.01"></div>
+<div><label class="small">Tolerancia de m² para comparables (%)</label><input type="number" id="p-tolerancia" step="0.01"></div>
+<div><label class="small">Valor de obra por m² (USD)</label><input type="number" id="p-obra"></div>
+<div><label class="small">Rentabilidad mínima objetivo (%)</label><input type="number" id="p-rentmin" step="0.01"></div>
+</div>
+<div class="btn-row">
+<button class="btn" style="width:auto" onclick="saveParams()">Guardar parámetros</button>
+<button class="btn secondary" onclick="resetParams()">Restaurar valores originales</button>
+</div>
+</div>
+</section>
+</main>
+</div>
+<div class="footer-note">Flipping Palermo — datos guardados localmente en este navegador. No se comparten entre usuarios ni dispositivos.</div>
+</div>
+<script>
+/* =========================================================
+USUARIOS — para agregar o cambiar accesos, editá esta lista.
+========================================================= */
+const USERS = [
+{ user: "admin", pass: "Flipping2025" },
+{ user: "socio", pass: "Socio2025" }
+];
+const DIAG = { EN: "En precio de mercado", ARRIBA: "Un poco arriba de precio de mercado", FUERA: "Fuera de precio de mercado" };
+const SEED_PARAMS = {
+ratioEn: 15, ratioArriba: 8, ratioFuera: 8, diasMax: 180,
+tasa: 0.08, descuento: 0.25, tolerancia: 0.15, obra: 900, rentmin: 0.15
+};
+const SEED_DATA = [
+["República de la India y Av. Cerviño","Palermo",4,"Con cochera","Departamento",133,0,490000,402,442,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-3-dorm.-con-dpcia-y-cochera-piso-alto.-57119247.html","Dato real (ZonaProp). Días original '>365', estimado por ritmo de visualizaciones."],
+["Darwin 1154","Palermo Hollywood",4,"Con cochera","Departamento",216,0,280000,339,244,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-departamento-en-venta-darwin-3-4-ambientes-57370638.html","Dato real (ZonaProp)"],
+["Gurruchaga al 2100","Palermo",3,"Con cochera","Departamento",60,0,130000,34,663,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-mb-3-ambientes-apto-profesional-excelente-ubicacion-59831967.html","Dato real (ZonaProp)"],
+["Humboldt 2425","Palermo",2,"Con cochera","Departamento",64,0,185000,192,173,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-excelente-duplex-en-palermo-apto-profesional-58510594.html","Dato real (ZonaProp)"],
+["Soler al 4000","Palermo",4,"Sin cochera","Departamento",84,0,179900,17,262,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-departamento-4-ambientes-palermo-apto-credito-59991550.html","Dato real (ZonaProp)"],
+["Bonpland 2300","Palermo",3,"Sin cochera","Departamento",49,0,110000,167,698,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-departamento-3-ambientes.-bonpland-al-2300-58724328.html","Dato real (ZonaProp)"],
+["Ortega y Gasset 1500","Las Cañitas",1,"Sin cochera","Departamento",46,0,159000,25,109,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-las-canitas-polo-garden-monoambiente-59914689.html","Dato real (ZonaProp)"],
+["Juez Tedín al 2800","Palermo Chico",5,"Con cochera","Departamento",190,0,850000,31,374,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-departamento-en-palermo-chico-59868392.html","Dato real (ZonaProp)"],
+["Ángel J. Carranza 2300","Palermo",3,"Sin cochera","Departamento",58,0,125000,12,772,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-departamento-3-ambientes-en-palermo-apto-credito-60035859.html","Dato real (ZonaProp)"],
+["Charcas 5100","Palermo",3,"Sin cochera","Departamento",59,0,139500,170,181,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-departamento-3-ambientes-palermo-58702282.html","Dato real (ZonaProp)"],
+["Av. Córdoba al 5400","Palermo Hollywood",2,"Sin cochera","Departamento",60,0,215000,5,44,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-departamento-dos-ambientes-en-venta-con-pileta-en-60096703.html","Dato real (ZonaProp)"],
+["Fitz Roy 2000","Palermo",2,"Sin cochera","Departamento",54,0,159000,19,119,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-vento-dpto.-2ambientes-amenities-palermo-hollywood-59975851.html","Dato real (ZonaProp)"],
+["Arce 400","Las Cañitas",2,"Sin cochera","PH",70,0,170000,30,305,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-triplex-2-ambientes-con-terraza-las-canitas-59884577.html","Dato real (ZonaProp). Tipo asumido PH (triplex con terraza)."],
+["Godoy Cruz 2900","Palermo",4,"Sin cochera","Departamento",78,0,225000,19,130,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-4-ambientes-c-baulera-palermo-venta-59971473.html","Dato real (ZonaProp)"],
+["Paunero 2793","Palermo Chico",2,"Sin cochera","Departamento",37,0,105000,69,859,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-venta-2-ambientes-con-balcon-palermo-chico-59559765.html","Dato real (ZonaProp)"],
+["Tte. B. Matienzo 1600","Las Cañitas",3,"Sin cochera","Departamento",68,0,155000,5,289,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-las-canitas-tte.-b.-matienzo-y-arce-68-m-2-dorm.-60102247.html","Dato real (ZonaProp)"],
+["Malabia 2208","Palermo",3,"Sin cochera","Departamento",97,0,190000,5,259,"https://www.zonaprop.com.ar/propiedades/clasificado/veclapin-departamento-de-3-ambientes-con-dependencias-y-balcon-60096943.html","Dato real (ZonaProp)"],
+["Av. Cabildo 1200","Belgrano",1,"Sin cochera","Departamento",34,2,135000,55,610,"","Ejemplo"],
+["Juramento 2400","Belgrano",2,"Sin cochera","Departamento",52,4,178000,33,470,"","Ejemplo"],
+["Vuelta de Obligado 2100","Belgrano",2,"Con cochera","Departamento",55,5,185000,18,300,"","Ejemplo"],
+["Sucre 2200","Belgrano",3,"Con cochera","PH",76,6,245000,50,620,"","Ejemplo"],
+["Echeverría 2500","Belgrano",3,"Con cochera","Departamento",82,6,255000,10,200,"","Ejemplo"],
+["Vicente López 1900","Recoleta",1,"Sin cochera","Departamento",32,2,150000,22,400,"","Ejemplo"],
+["Av. Callao 1500","Recoleta",2,"Con cochera","Departamento",54,4,210000,15,350,"","Ejemplo"],
+["Rodríguez Peña 1700","Recoleta",2,"Con cochera","Departamento",56,4,215000,42,580,"","Ejemplo"],
+["Junín 1200","Recoleta",3,"Con cochera","Departamento",79,6,295000,5,120,"","Ejemplo"],
+["Av. Rivadavia 4900","Caballito",1,"Sin cochera","Departamento",36,2,105000,65,700,"","Ejemplo"],
+["Yerbal 700","Caballito",2,"Sin cochera","Departamento",51,4,138000,28,460,"","Ejemplo"],
+["Pedro Goyena 900","Caballito",2,"Con cochera","Departamento",56,4,145000,14,280,"","Ejemplo"],
+["Del Barco Centenera 1100","Caballito",3,"Con cochera","PH",74,6,190000,38,510,"","Ejemplo"],
+["Av. Triunvirato 4300","Villa Urquiza",1,"Sin cochera","Departamento",34,2,98000,48,530,"","Ejemplo"],
+["Mariano Acha 1800","Villa Urquiza",2,"Sin cochera","Departamento",54,4,132000,20,320,"","Ejemplo"],
+["Congreso 3600","Villa Urquiza",3,"Con cochera","PH",76,6,178000,33,410,"","Ejemplo"],
+["Holmberg 2300","Villa Urquiza",4,"Con cochera","Lote propio",97,8,235000,9,150,"","Ejemplo"],
+["Concordia 900","Villa Devoto",2,"Con cochera","Departamento",55,5,950000,70,90,"","Ejemplo"],
+["Nazca 1400","Villa Devoto",2,"Con cochera","Departamento",58,5,178000,25,480,"","Ejemplo"]
+].map(r => ({
+direccion:r[0], barrio:r[1], ambientes:r[2], cochera:r[3], tipo:r[4],
+m2cub:r[5], m2desc:r[6], precio:r[7], dias:r[8], visitas:r[9], link:r[10], notas:r[11]
+}));
+let DATA = [];
+let PARAMS = {};
+/* ---------------- Persistence ---------------- */
+function loadData(){
+const raw = localStorage.getItem('flipping_db_v1');
+DATA = raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(SEED_DATA));
+}
+function saveData(){ localStorage.setItem('flipping_db_v1', JSON.stringify(DATA)); }
+function loadParams(){
+const raw = localStorage.getItem('flipping_params_v1');
+PARAMS = raw ? JSON.parse(raw) : {...SEED_PARAMS};
+}
+function persistParams(){ localStorage.setItem('flipping_params_v1', JSON.stringify(PARAMS)); }
+function resetData(){
+if(!confirm('Esto borra las unidades que agregaste en este navegador y vuelve a los datos originales. ¿Seguir?')) return;
+localStorage.removeItem('flipping_db_v1');
+loadData();
+renderAll();
+}
+function resetParams(){
+PARAMS = {...SEED_PARAMS};
+persistParams();
+fillParamInputs();
+renderAll();
+}
+/* ---------------- Core calculations (mirror del Excel) ---------------- */
+function ratioOf(dias, visitas){
+if(dias < 30) return dias === 0 ? visitas : visitas/dias;
+return visitas/30;
+}
+function m2Total(u){ return (Number(u.m2cub)||0) + (Number(u.m2desc)||0); }
+function diagnosticoPreliminar(u){
+const ratio = ratioOf(u.dias, u.visitas);
+if(u.dias > PARAMS.diasMax) return DIAG.FUERA;
+if(ratio >= PARAMS.ratioEn) return DIAG.EN;
+if(ratio >= PARAMS.ratioArriba) return DIAG.ARRIBA;
+if(ratio < PARAMS.ratioFuera) return DIAG.FUERA;
+return DIAG.ARRIBA;
+}
+function computeDiagnosticos(){
+// paso 1: preliminar para todas
+DATA.forEach(u => { u._ratio = ratioOf(u.dias, u.visitas); u._prelim = diagnosticoPreliminar(u); });
+// paso 2: promedio "en precio" por segmento (barrio+ambientes+tipo+cochera), en base al preliminar
+DATA.forEach(u => {
+if(u._prelim !== DIAG.FUERA){ u._diag = u._prelim; return; }
+const seg = DATA.filter(x => x.barrio===u.barrio && x.ambientes===u.ambientes && x.tipo===u.tipo && x.cochera===u.cochera && x._prelim===DIAG.EN);
+if(seg.length){
+const avg = seg.reduce((s,x)=>s+Number(x.precio),0)/seg.length;
+u._diag = (Number(u.precio) < avg) ? DIAG.EN : DIAG.FUERA;
+} else {
+u._diag = DIAG.FUERA;
+}
+});
+}
+function fmtUSD(n){
+if(n===null || n===undefined || isNaN(n)) return '—';
+return 'USD ' + Math.round(n).toLocaleString('es-AR');
+}
+function fmtPct(n){
+if(n===null || n===undefined || isNaN(n)) return '—';
+return (n*100).toFixed(1) + '%';
+}
+function tagHtml(diag){
+if(diag===DIAG.EN) return '<span class="tag en">En precio</span>';
+if(diag===DIAG.ARRIBA) return '<span class="tag arriba">Un poco arriba</span>';
+if(diag===DIAG.FUERA) return '<span class="tag fuera">Fuera de precio</span>';
+return '—';
+}
+/* ---------------- Render: Database ---------------- */
+function renderDatabase(){
+computeDiagnosticos();
+const thead = document.querySelector('#tabla-database thead');
+const tbody = document.querySelector('#tabla-database tbody');
+thead.innerHTML = '<tr><th>Dirección</th><th>Barrio</th><th>Amb.</th><th>Cochera</th><th>Tipo</th><th>m² tot.</th><th>Precio</th><th>Días</th><th>Visitas</th><th>Ratio</th><th>Diagnóstico</th><th>Notas</th></tr>';
+tbody.innerHTML = DATA.map(u => `
+<tr>
+<td>${u.link ? `<a href="${u.link}" target="_blank" rel="noopener">${u.direccion}</a>` : u.direccion}</td>
+<td>${u.barrio}</td><td>${u.ambientes}</td><td>${u.cochera}</td><td>${u.tipo}</td>
+<td>${m2Total(u)}</td><td>${fmtUSD(u.precio)}</td><td>${u.dias}</td><td>${u.visitas}</td>
+<td>${u._ratio.toFixed(1)}</td><td>${tagHtml(u._diag)}</td><td>${u.notas||''}</td>
+</tr>`).join('');
+document.getElementById('db-count').textContent = DATA.length;
+}
+function addUnidad(){
+const u = {
+direccion: document.getElementById('db-direccion').value || 'Sin nombre',
+barrio: document.getElementById('db-barrio').value || 'Sin barrio',
+ambientes: Number(document.getElementById('db-ambientes').value),
+cochera: document.getElementById('db-cochera').value,
+tipo: document.getElementById('db-tipo').value,
+m2cub: Number(document.getElementById('db-m2cub').value)||0,
+m2desc: Number(document.getElementById('db-m2desc').value)||0,
+precio: Number(document.getElementById('db-precio').value)||0,
+dias: Number(document.getElementById('db-dias').value)||0,
+visitas: Number(document.getElementById('db-visitas').value)||0,
+link: document.getElementById('db-link').value || '',
+notas: document.getElementById('db-notas').value || ''
+};
+DATA.push(u);
+saveData();
+renderAll();
+document.getElementById('db-direccion').value='';
+document.getElementById('db-barrio').value='';
+document.getElementById('db-link').value='';
+document.getElementById('db-notas').value='';
+}
+/* ---------------- Render: Valor real de mercado ---------------- */
+function renderMercado(){
+computeDiagnosticos();
+const groups = {};
+DATA.forEach(u => {
+const key = [u.barrio,u.ambientes,u.tipo,u.cochera].join('|');
+if(!groups[key]) groups[key] = {barrio:u.barrio, ambientes:u.ambientes, tipo:u.tipo, cochera:u.cochera, en:[], arriba:[], fuera:[]};
+if(u._diag===DIAG.EN) groups[key].en.push(Number(u.precio));
+else if(u._diag===DIAG.ARRIBA) groups[key].arriba.push(Number(u.precio));
+else groups[key].fuera.push(Number(u.precio));
+});
+const avg = arr => arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : null;
+const rows = Object.values(groups).sort((a,b)=> a.barrio.localeCompare(b.barrio) || a.ambientes-b.ambientes);
+const thead = document.querySelector('#tabla-mercado thead');
+const tbody = document.querySelector('#tabla-mercado tbody');
+thead.innerHTML = '<tr><th>Barrio</th><th>Amb.</th><th>Tipo</th><th>Cochera</th><th>Prom. en precio</th><th>Cant.</th><th>Prom. arriba</th><th>Cant.</th><th>Prom. fuera</th><th>Cant.</th></tr>';
+tbody.innerHTML = rows.map(g => `
+<tr>
+<td>${g.barrio}</td><td>${g.ambientes}</td><td>${g.tipo}</td><td>${g.cochera}</td>
+<td>${fmtUSD(avg(g.en))}</td><td>${g.en.length}</td>
+<td>${fmtUSD(avg(g.arriba))}</td><td>${g.arriba.length}</td>
+<td>${fmtUSD(avg(g.fuera))}</td><td>${g.fuera.length}</td>
+</tr>`).join('');
+}
+/* ---------------- Render: Logica de negocio ---------------- */
+function fillBarrioOptions(){
+const sel = document.getElementById('lg-barrio');
+const current = sel.value;
+const barrios = [...new Set(DATA.map(u=>u.barrio))].sort();
+sel.innerHTML = barrios.map(b=>`<option>${b}</option>`).join('');
+if(barrios.includes(current)) sel.value = current;
+}
+function renderLogica(){
+computeDiagnosticos();
+const amb = Number(document.getElementById('lg-ambientes').value);
+const cochera = document.getElementById('lg-cochera').value;
+const tipo = document.getElementById('lg-tipo').value;
+const barrio = document.getElementById('lg-barrio').value;
+const m2cub = Number(document.getElementById('lg-m2cub').value)||0;
+const m2desc = Number(document.getElementById('lg-m2desc').value)||0;
+const precio = Number(document.getElementById('lg-precio').value)||0;
+const m2tot = m2cub + m2desc;
+const tol = PARAMS.tolerancia;
+const comparables = DATA.filter(u =>
+u.ambientes===amb && u.cochera===cochera && u.tipo===tipo && u.barrio===barrio &&
+m2Total(u) >= m2tot*(1-tol) && m2Total(u) <= m2tot*(1+tol) &&
+u._diag === DIAG.EN
+);
+const precioProm = comparables.length ? comparables.reduce((s,u)=>s+Number(u.precio),0)/comparables.length : null;
+const tasa = PARAMS.tasa;
+const precioTotal = precio*(1+tasa);
+const precioObj = precioProm!==null ? precioProm*(1-PARAMS.descuento) : null;
+const difReal = precioProm!==null ? (precioProm-precioTotal)/precioProm : null;
+const cumple = precioProm!==null ? (precioTotal <= precioObj) : null;
+const sugerido = precioProm!==null ? (cumple ? null : precioObj/(1+tasa)) : null;
+const compraAsumida = precio;
+const costoCompra = compraAsumida*(1+tasa);
+const costoObra = m2tot*PARAMS.obra;
+const costoTotal = costoCompra+costoObra;
+const reventa = precioProm;
+const beneficio = precioProm!==null ? reventa-costoTotal : null;
+const rentabilidad = precioProm!==null ? beneficio/costoTotal : null;
+document.getElementById('out-m2tot').textContent = m2tot;
+document.getElementById('out-cant').textContent = comparables.length;
+document.getElementById('out-precioprom').textContent = fmtUSD(precioProm);
+document.getElementById('out-preciototal').textContent = fmtUSD(precioTotal);
+document.getElementById('out-precioobj').textContent = fmtUSD(precioObj);
+document.getElementById('out-difreal').textContent = fmtPct(difReal);
+const cumpleEl = document.getElementById('out-cumple');
+cumpleEl.textContent = precioProm===null ? 'Sin datos' : (cumple ? 'SÍ CUMPLE' : 'NO CUMPLE');
+cumpleEl.parentElement.className = 'result-row big ' + (precioProm===null?'':(cumple?'good':'bad'));
+document.getElementById('out-sugerido').textContent = precioProm===null ? 'Sin datos' : (cumple ? 'Ya cumple la condición' : fmtUSD(sugerido));
+document.getElementById('out-compraasumida').textContent = fmtUSD(compraAsumida);
+document.getElementById('out-costocompra').textContent = fmtUSD(costoCompra);
+document.getElementById('out-costoobra').textContent = fmtUSD(costoObra);
+document.getElementById('out-costototal').textContent = fmtUSD(costoTotal);
+document.getElementById('out-reventa').textContent = fmtUSD(reventa);
+const benEl = document.getElementById('out-beneficio');
+benEl.textContent = precioProm===null ? 'Sin datos' : (beneficio>=0? fmtUSD(beneficio) : '-' + fmtUSD(Math.abs(beneficio)));
+benEl.parentElement.className = 'result-row big ' + (precioProm===null?'':(beneficio>=PARAMS.rentmin*costoTotal?'good':(beneficio>0?'warn':'bad')));
+const rentEl = document.getElementById('out-rentabilidad');
+rentEl.textContent = fmtPct(rentabilidad);
+rentEl.parentElement.className = 'result-row big ' + (precioProm===null?'':(rentabilidad>=PARAMS.rentmin?'good':(rentabilidad>=0?'warn':'bad')));
+}
+/* ---------------- Params panel ---------------- */
+function fillParamInputs(){
+document.getElementById('p-ratioEn').value = PARAMS.ratioEn;
+document.getElementById('p-ratioArriba').value = PARAMS.ratioArriba;
+document.getElementById('p-ratioFuera').value = PARAMS.ratioFuera;
+document.getElementById('p-diasMax').value = PARAMS.diasMax;
+document.getElementById('p-tasa').value = PARAMS.tasa;
+document.getElementById('p-descuento').value = PARAMS.descuento;
+document.getElementById('p-tolerancia').value = PARAMS.tolerancia;
+document.getElementById('p-obra').value = PARAMS.obra;
+document.getElementById('p-rentmin').value = PARAMS.rentmin;
+}
+function saveParams(){
+PARAMS = {
+ratioEn: Number(document.getElementById('p-ratioEn').value),
+ratioArriba: Number(document.getElementById('p-ratioArriba').value),
+ratioFuera: Number(document.getElementById('p-ratioFuera').value),
+diasMax: Number(document.getElementById('p-diasMax').value),
+tasa: Number(document.getElementById('p-tasa').value),
+descuento: Number(document.getElementById('p-descuento').value),
+tolerancia: Number(document.getElementById('p-tolerancia').value),
+obra: Number(document.getElementById('p-obra').value),
+rentmin: Number(document.getElementById('p-rentmin').value)
+};
+persistParams();
+renderAll();
+alert('Parámetros guardados.');
+}
+/* ---------------- Nav / render all ---------------- */
+function showView(id){
+document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+document.getElementById(id).classList.add('active');
+document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b.dataset.view===id));
+}
+function renderAll(){
+fillBarrioOptions();
+renderDatabase();
+renderMercado();
+renderLogica();
+}
+['lg-ambientes','lg-cochera','lg-tipo','lg-barrio','lg-m2cub','lg-m2desc','lg-precio','lg-dias','lg-visitas'].forEach(id=>{
+document.addEventListener('DOMContentLoaded', ()=>{
+document.getElementById(id).addEventListener('input', renderLogica);
+document.getElementById(id).addEventListener('change', renderLogica);
+});
+});
+/* ---------------- Auth ---------------- */
+function attemptLogin(){
+const u = document.getElementById('login-user').value.trim();
+const p = document.getElementById('login-pass').value;
+const match = USERS.find(x => x.user===u && x.pass===p);
+const err = document.getElementById('login-error');
+if(match){
+localStorage.setItem('flipping_session', u);
+enterApp(u);
+} else {
+err.textContent = 'Usuario o contraseña incorrectos.';
+}
+}
+function logout(){
+localStorage.removeItem('flipping_session');
+document.getElementById('app').style.display='none';
+document.getElementById('login-screen').style.display='flex';
+document.getElementById('login-pass').value='';
+}
+function enterApp(username){
+document.getElementById('login-screen').style.display='none';
+document.getElementById('app').style.display='block';
+document.getElementById('who-label').textContent = 'Conectado como ' + username;
+loadData();
+loadParams();
+fillParamInputs();
+renderAll();
+}
+document.getElementById('login-pass').addEventListener('keydown', e => { if(e.key==='Enter') attemptLogin(); });
+document.getElementById('login-user').addEventListener('keydown', e => { if(e.key==='Enter') attemptLogin(); });
+(function init(){
+const session = localStorage.getItem('flipping_session');
+if(session && USERS.some(x=>x.user===session)){
+enterApp(session);
+}
+})();
+</script>
+</body>
+</html>
