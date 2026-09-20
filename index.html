@@ -119,6 +119,10 @@ tr:hover td{ background:#f7f5f0; }
 .btn-add:hover{ background:#96661d; }
 .btn-row{ display:flex; gap:10px; margin-top:18px; flex-wrap:wrap;}
 .btn-row .btn{ width:auto; }
+.btn-mini{ padding:5px 9px; font-size:13px; border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer; font-family:inherit; margin-right:4px; line-height:1; border-radius:3px; }
+.btn-mini:hover{ background:#f2f0ea; }
+.btn-mini.danger{ border-color:var(--red-line); }
+.btn-mini.danger:hover{ background:var(--red-bg); }
 .note{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:10px;}
 .footer-note{ padding:24px 40px; color:var(--ink-soft); font-size:12px; border-top:1px solid var(--line); margin-top:20px;}
 </style>
@@ -223,7 +227,7 @@ tr:hover td{ background:#f7f5f0; }
 <h2>Database de unidades comparables</h2>
 <p class="lead">Cargá acá las unidades que vayas relevando. El Diagnóstico de precio se calcula solo con el ratio de visualizaciones (últimos 30 días) y los parámetros de la pestaña Parámetros.</p>
 <div class="card">
-<h3>Agregar unidad</h3>
+<h3 id="form-title">Agregar unidad</h3>
 <div class="grid3">
 <div><label class="small">Dirección</label><input type="text" id="db-direccion"></div>
 <div><label class="small">Barrio</label><input type="text" id="db-barrio" placeholder="Ej. Palermo"></div>
@@ -245,7 +249,8 @@ tr:hover td{ background:#f7f5f0; }
 <div><label class="small">Notas</label><input type="text" id="db-notas"></div>
 </div>
 <div class="btn-row">
-<button class="btn btn-add" style="background:var(--ochre)" onclick="addUnidad()">Agregar a la Database</button>
+<button class="btn btn-add" id="btn-add-unidad" style="background:var(--ochre)" onclick="addUnidad()">Agregar a la Database</button>
+<button class="btn secondary" id="btn-cancel-edit" onclick="cancelEdit()" style="display:none">Cancelar edición</button>
 <button class="btn secondary" onclick="resetData()">Restaurar datos originales</button>
 </div>
 </div>
@@ -255,7 +260,7 @@ tr:hover td{ background:#f7f5f0; }
 <table id="tabla-database"><thead></thead><tbody></tbody></table>
 </div>
 </div>
-</section>
+section>
 <!-- ---- PARAMETROS ---- -->
 <section class="view" id="v-parametros">
 <h2>Parámetros</h2>
@@ -412,19 +417,72 @@ if(diag===DIAG.FUERA) return '<span class="tag fuera">Fuera de precio</span>';
 return '—';
 }
 /* ---------------- Render: Database ---------------- */
+let editingIndex = null;
 function renderDatabase(){
 computeDiagnosticos();
 const thead = document.querySelector('#tabla-database thead');
 const tbody = document.querySelector('#tabla-database tbody');
-thead.innerHTML = '<tr><th>Dirección</th><th>Barrio</th><th>Amb.</th><th>Cochera</th><th>Tipo</th><th>m² tot.</th><th>Precio</th><th>Días</th><th>Visitas</th><th>Ratio</th><th>Diagnóstico</th><th>Notas</th></tr>';
-tbody.innerHTML = DATA.map(u => `
+thead.innerHTML = '<tr><th>Dirección</th><th>Barrio</th><th>Amb.</th><th>Cochera</th><th>Tipo</th><th>m² tot.</th><th>Precio</th><th>Días</th><th>Visitas</th><th>Ratio</th><th>Diagnóstico</th><th>Notas</th><th>Acciones</th></tr>';
+tbody.innerHTML = DATA.map((u,i) => `
 <tr>
 <td>${u.link ? `<a href="${u.link}" target="_blank" rel="noopener">${u.direccion}</a>` : u.direccion}</td>
 <td>${u.barrio}</td><td>${u.ambientes}</td><td>${u.cochera}</td><td>${u.tipo}</td>
 <td>${m2Total(u)}</td><td>${fmtUSD(u.precio)}</td><td>${u.dias}</td><td>${u.visitas}</td>
 <td>${u._ratio.toFixed(1)}</td><td>${tagHtml(u._diag)}</td><td>${u.notas||''}</td>
+<td><button class="btn-mini" onclick="editUnidad(${i})" title="Editar">✏️</button><button class="btn-mini danger" onclick="deleteUnidad(${i})" title="Eliminar">🗑️</button></td>
 </tr>`).join('');
 document.getElementById('db-count').textContent = DATA.length;
+}
+function fillFormFromUnidad(u){
+document.getElementById('db-direccion').value = u.direccion;
+document.getElementById('db-barrio').value = u.barrio;
+document.getElementById('db-ambientes').value = u.ambientes;
+document.getElementById('db-cochera').value = u.cochera;
+document.getElementById('db-tipo').value = u.tipo;
+document.getElementById('db-m2cub').value = u.m2cub;
+document.getElementById('db-m2desc').value = u.m2desc;
+document.getElementById('db-precio').value = u.precio;
+document.getElementById('db-dias').value = u.dias;
+document.getElementById('db-visitas').value = u.visitas;
+document.getElementById('db-link').value = u.link || '';
+document.getElementById('db-notas').value = u.notas || '';
+}
+function clearForm(){
+document.getElementById('db-direccion').value='';
+document.getElementById('db-barrio').value='';
+document.getElementById('db-ambientes').value='1';
+document.getElementById('db-cochera').value='Con cochera';
+document.getElementById('db-tipo').value='Departamento';
+document.getElementById('db-m2cub').value='50';
+document.getElementById('db-m2desc').value='0';
+document.getElementById('db-precio').value='150000';
+document.getElementById('db-dias').value='15';
+document.getElementById('db-visitas').value='300';
+document.getElementById('db-link').value='';
+document.getElementById('db-notas').value='';
+}
+function editUnidad(i){
+editingIndex = i;
+fillFormFromUnidad(DATA[i]);
+document.getElementById('form-title').textContent = 'Editar unidad';
+document.getElementById('btn-add-unidad').textContent = 'Guardar cambios';
+document.getElementById('btn-cancel-edit').style.display = 'inline-flex';
+window.scrollTo({top:0, behavior:'smooth'});
+}
+function cancelEdit(){
+editingIndex = null;
+clearForm();
+document.getElementById('form-title').textContent = 'Agregar unidad';
+document.getElementById('btn-add-unidad').textContent = 'Agregar a la Database';
+document.getElementById('btn-cancel-edit').style.display = 'none';
+}
+function deleteUnidad(i){
+if(!confirm('¿Eliminar esta unidad de la Database? Esta acción no se puede deshacer.')) return;
+DATA.splice(i,1);
+saveData();
+if(editingIndex === i){ editingIndex = null; }
+renderAll();
+cancelEdit();
 }
 function addUnidad(){
 const u = {
@@ -441,13 +499,14 @@ visitas: Number(document.getElementById('db-visitas').value)||0,
 link: document.getElementById('db-link').value || '',
 notas: document.getElementById('db-notas').value || ''
 };
+if(editingIndex !== null){
+DATA[editingIndex] = u;
+} else {
 DATA.push(u);
+}
 saveData();
 renderAll();
-document.getElementById('db-direccion').value='';
-document.getElementById('db-barrio').value='';
-document.getElementById('db-link').value='';
-document.getElementById('db-notas').value='';
+cancelEdit();
 }
 /* ---------------- Render: Valor real de mercado ---------------- */
 function renderMercado(){
