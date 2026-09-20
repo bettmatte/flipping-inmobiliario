@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Flipping Palermo — Panel de negocio</title>
+<title>Calculadora de Flipping — Panel de negocio</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
@@ -123,6 +123,18 @@ tr:hover td{ background:#f7f5f0; }
 .btn-mini:hover{ background:#f2f0ea; }
 .btn-mini.danger{ border-color:var(--red-line); }
 .btn-mini.danger:hover{ background:var(--red-bg); }
+.hamburger{ background:none; border:1px solid var(--line); font-size:17px; cursor:pointer; color:var(--ink); margin-right:16px; padding:6px 11px; line-height:1; }
+.hamburger:hover{ background:#f2f0ea; }
+nav.tabs.collapsed{ display:none; }
+.filter-row{ display:flex; gap:14px; margin-bottom:18px; flex-wrap:wrap; align-items:flex-end; }
+.filter-row > div{ min-width:170px; }
+table.compact{ font-size:12.5px; table-layout:auto; }
+table.compact th, table.compact td{ padding:6px 7px; }
+td.ellip, th.ellip{ max-width:150px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.chart-acc{ border:1px solid var(--line); background:var(--surface); margin-bottom:10px; }
+.chart-acc summary{ padding:13px 18px; cursor:pointer; font-weight:600; font-size:14px; }
+.chart-acc summary:hover{ background:#f7f5f0; }
+.chart-wrap{ padding:10px 20px 22px; max-width:700px; }
 .note{ font-size:12.5px; color:var(--ink-soft); line-height:1.5; margin-top:10px;}
 .footer-note{ padding:24px 40px; color:var(--ink-soft); font-size:12px; border-top:1px solid var(--line); margin-top:20px;}
 </style>
@@ -131,7 +143,7 @@ tr:hover td{ background:#f7f5f0; }
 <!-- ============ LOGIN ============ -->
 <div id="login-screen">
 <div class="login-card">
-<h1>Flipping <span style="color:var(--teal)">Palermo</span></h1>
+<h1>Calculadora de <span style="color:var(--teal)">Flipping</span></h1>
 <p class="tag">Panel de evaluación de oportunidades de flipping inmobiliario. Ingresá con tu usuario para continuar.</p>
 <div class="field">
 <label for="login-user">Usuario</label>
@@ -148,7 +160,10 @@ tr:hover td{ background:#f7f5f0; }
 <!-- ============ APP ============ -->
 <div id="app">
 <div class="topbar">
-<div class="brand">Flipping <span>Palermo</span></div>
+<div style="display:flex;align-items:center;">
+<button class="hamburger" onclick="toggleSidebar()" aria-label="Menú" title="Mostrar/ocultar menú">☰</button>
+<div class="brand">Calculadora de <span>Flipping</span></div>
+</div>
 <div class="who">
 <span id="who-label"></span>
 <button class="btn secondary" onclick="logout()">Cerrar sesión</button>
@@ -221,6 +236,8 @@ tr:hover td{ background:#f7f5f0; }
 </div>
 <p class="note">Un promedio de "Fuera de precio de mercado" nunca puede ser menor al de "En precio de mercado": si una unidad barata figuraba como "fuera", se reclasifica sola como "en precio" (el problema sería la unidad, no el precio).</p>
 </div>
+<div class="section-label">Gráficos por barrio (tocá para desplegar)</div>
+<div id="mercado-charts"></div>
 </section>
 <!-- ---- DATABASE ---- -->
 <section class="view" id="v-database">
@@ -256,11 +273,28 @@ tr:hover td{ background:#f7f5f0; }
 </div>
 <div class="card">
 <h3>Unidades cargadas (<span id="db-count">0</span>)</h3>
+<div class="filter-row">
+<div><label class="small">Filtrar por barrio</label><select id="db-filter-barrio"><option value="">Todos los barrios</option></select></div>
+<div><label class="small">Ordenar por</label><select id="db-sort-by">
+<option value="direccion">Dirección</option>
+<option value="barrio">Barrio</option>
+<option value="ambientes">Ambientes</option>
+<option value="cochera">Cochera</option>
+<option value="tipo">Tipo</option>
+<option value="m2tot">m² totales</option>
+<option value="precio">Precio</option>
+<option value="dias">Días</option>
+<option value="visitas">Visitas</option>
+<option value="ratio">Ratio</option>
+<option value="diagnostico">Diagnóstico</option>
+</select></div>
+<div><label class="small">Orden</label><select id="db-sort-dir"><option value="asc">Ascendente</option><option value="desc">Descendente</option></select></div>
+</div>
 <div class="table-scroll">
-<table id="tabla-database"><thead></thead><tbody></tbody></table>
+<table id="tabla-database" class="compact"><thead></thead><tbody></tbody></table>
 </div>
 </div>
-section>
+</section>
 <!-- ---- PARAMETROS ---- -->
 <section class="view" id="v-parametros">
 <h2>Parámetros</h2>
@@ -292,8 +326,9 @@ section>
 </section>
 </main>
 </div>
-<div class="footer-note">Flipping Palermo — datos guardados localmente en este navegador. No se comparten entre usuarios ni dispositivos.</div>
+<div class="footer-note">Calculadora de Flipping — datos guardados localmente en este navegador. No se comparten entre usuarios ni dispositivos.</div>
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
 <script>
 /* =========================================================
 USUARIOS — para agregar o cambiar accesos, editá esta lista.
@@ -418,20 +453,51 @@ return '—';
 }
 /* ---------------- Render: Database ---------------- */
 let editingIndex = null;
+function tipoAbbr(t){ if(t==='Departamento') return 'Depto'; if(t==='Lote propio') return 'Lote'; return t; }
+function cocheraAbbr(c){ return c==='Con cochera' ? 'Sí' : 'No'; }
+function fillDbFilterOptions(){
+const sel = document.getElementById('db-filter-barrio');
+if(!sel) return;
+const current = sel.value;
+const barrios = [...new Set(DATA.map(u=>u.barrio))].sort();
+sel.innerHTML = '<option value="">Todos los barrios</option>' + barrios.map(b=>`<option>${b}</option>`).join('');
+if(barrios.includes(current)) sel.value = current;
+}
 function renderDatabase(){
 computeDiagnosticos();
+fillDbFilterOptions();
+const filterBarrio = document.getElementById('db-filter-barrio').value;
+const sortBy = document.getElementById('db-sort-by').value;
+const sortDir = document.getElementById('db-sort-dir').value;
+let rows = DATA.map((u,i) => ({u,i}));
+if(filterBarrio) rows = rows.filter(r => r.u.barrio === filterBarrio);
+const getVal = (r, key) => {
+if(key==='m2tot') return m2Total(r.u);
+if(key==='ratio') return r.u._ratio;
+if(key==='diagnostico') return r.u._diag;
+return r.u[key];
+};
+rows.sort((a,b) => {
+let va = getVal(a, sortBy), vb = getVal(b, sortBy);
+if(typeof va === 'string') va = va.toLowerCase();
+if(typeof vb === 'string') vb = vb.toLowerCase();
+if(va < vb) return sortDir==='asc' ? -1 : 1;
+if(va > vb) return sortDir==='asc' ? 1 : -1;
+return 0;
+});
 const thead = document.querySelector('#tabla-database thead');
 const tbody = document.querySelector('#tabla-database tbody');
-thead.innerHTML = '<tr><th>Dirección</th><th>Barrio</th><th>Amb.</th><th>Cochera</th><th>Tipo</th><th>m² tot.</th><th>Precio</th><th>Días</th><th>Visitas</th><th>Ratio</th><th>Diagnóstico</th><th>Notas</th><th>Acciones</th></tr>';
-tbody.innerHTML = DATA.map((u,i) => `
+thead.innerHTML = '<tr><th class="ellip">Dirección</th><th>Barrio</th><th>Amb.</th><th>Coch.</th><th>Tipo</th><th>m² tot.</th><th>Precio</th><th>Días</th><th>Visitas</th><th>Ratio</th><th>Diagnóstico</th><th>Notas</th><th>Acciones</th></tr>';
+tbody.innerHTML = rows.map(({u,i}) => `
 <tr>
-<td>${u.link ? `<a href="${u.link}" target="_blank" rel="noopener">${u.direccion}</a>` : u.direccion}</td>
-<td>${u.barrio}</td><td>${u.ambientes}</td><td>${u.cochera}</td><td>${u.tipo}</td>
+<td class="ellip" title="${u.direccion}">${u.link ? `<a href="${u.link}" target="_blank" rel="noopener">${u.direccion}</a>` : u.direccion}</td>
+<td>${u.barrio}</td><td>${u.ambientes}</td><td>${cocheraAbbr(u.cochera)}</td><td>${tipoAbbr(u.tipo)}</td>
 <td>${m2Total(u)}</td><td>${fmtUSD(u.precio)}</td><td>${u.dias}</td><td>${u.visitas}</td>
-<td>${u._ratio.toFixed(1)}</td><td>${tagHtml(u._diag)}</td><td>${u.notas||''}</td>
+<td>${u._ratio.toFixed(1)}</td><td>${tagHtml(u._diag)}</td>
+<td class="ellip" title="${u.notas||''}">${u.notas?'📝':''}</td>
 <td><button class="btn-mini" onclick="editUnidad(${i})" title="Editar">✏️</button><button class="btn-mini danger" onclick="deleteUnidad(${i})" title="Eliminar">🗑️</button></td>
 </tr>`).join('');
-document.getElementById('db-count').textContent = DATA.length;
+document.getElementById('db-count').textContent = filterBarrio ? (rows.length + ' de ' + DATA.length) : DATA.length;
 }
 function fillFormFromUnidad(u){
 document.getElementById('db-direccion').value = u.direccion;
@@ -531,6 +597,41 @@ tbody.innerHTML = rows.map(g => `
 <td>${fmtUSD(avg(g.arriba))}</td><td>${g.arriba.length}</td>
 <td>${fmtUSD(avg(g.fuera))}</td><td>${g.fuera.length}</td>
 </tr>`).join('');
+renderMercadoCharts(rows, avg);
+}
+let chartInstances = {};
+function renderMercadoCharts(rows, avg){
+const container = document.getElementById('mercado-charts');
+if(!container || typeof Chart === 'undefined') return;
+const byBarrio = {};
+rows.forEach(g => {
+if(!byBarrio[g.barrio]) byBarrio[g.barrio] = [];
+byBarrio[g.barrio].push(g);
+});
+Object.values(chartInstances).forEach(c => c.destroy());
+chartInstances = {};
+const barrios = Object.keys(byBarrio).sort();
+container.innerHTML = barrios.map(barrio => {
+const cid = 'chart-' + barrio.replace(/[^a-zA-Z0-9]/g,'');
+return `<details class="chart-acc"><summary>${barrio}</summary><div class="chart-wrap"><canvas id="${cid}" height="90"></canvas></div></details>`;
+}).join('');
+barrios.forEach(barrio => {
+const cid = 'chart-' + barrio.replace(/[^a-zA-Z0-9]/g,'');
+const canvas = document.getElementById(cid);
+if(!canvas) return;
+const groups = byBarrio[barrio];
+const labels = groups.map(g => g.ambientes + ' amb. ' + tipoAbbr(g.tipo) + (g.cochera==='Con cochera' ? ' · cochera' : ''));
+chartInstances[cid] = new Chart(canvas, {
+type: 'bar',
+data: { labels, datasets: [
+{ label: 'En precio', data: groups.map(g=>avg(g.en)), backgroundColor: '#a9d2af' },
+{ label: 'Un poco arriba', data: groups.map(g=>avg(g.arriba)), backgroundColor: '#e2c78a' },
+{ label: 'Fuera de precio', data: groups.map(g=>avg(g.fuera)), backgroundColor: '#e3b3a5' }
+]},
+options: { responsive: true, plugins: { legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Sans' } } } },
+scales: { y: { beginAtZero: true, ticks: { callback: v => 'USD ' + Math.round(v/1000) + 'k' } } } }
+});
+});
 }
 /* ---------------- Render: Logica de negocio ---------------- */
 function fillBarrioOptions(){
@@ -632,10 +733,18 @@ renderDatabase();
 renderMercado();
 renderLogica();
 }
+function toggleSidebar(){
+document.querySelector('nav.tabs').classList.toggle('collapsed');
+}
 ['lg-ambientes','lg-cochera','lg-tipo','lg-barrio','lg-m2cub','lg-m2desc','lg-precio','lg-dias','lg-visitas'].forEach(id=>{
 document.addEventListener('DOMContentLoaded', ()=>{
 document.getElementById(id).addEventListener('input', renderLogica);
 document.getElementById(id).addEventListener('change', renderLogica);
+});
+});
+['db-filter-barrio','db-sort-by','db-sort-dir'].forEach(id=>{
+document.addEventListener('DOMContentLoaded', ()=>{
+document.getElementById(id).addEventListener('change', renderDatabase);
 });
 });
 /* ---------------- Auth ---------------- */
